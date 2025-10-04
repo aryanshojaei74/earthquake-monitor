@@ -3,34 +3,34 @@ import { parse } from 'node-html-parser';
 
 export default async (req, res) => {
   try {
-    // تنظیم هدرهای غیرفعال کننده کش
+    // غیرفعال کردن کش
     res.setHeader('Cache-Control', 'no-store, max-age=0');
     res.setHeader('Pragma', 'no-cache');
     
     // تنظیم User-Agent شبیه مرورگر
     const options = {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-      }
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept-Language': 'fa-IR,fa;q=0.9'
+      },
+      timeout: 10000 // 10 ثانیه تایم‌اوت
     };
 
     const response = await fetch('http://irsc.ut.ac.ir/index.php?lang=fa', options);
     
-    // بررسی وضعیت پاسخ
     if (!response.ok) {
       throw new Error(`پاسخ غیرموفق: ${response.status} ${response.statusText}`);
     }
 
     const html = await response.text();
     
-    // بررسی محتوای دریافتی
     if (!html.includes('جدول اطلاعات زمین لرزه')) {
       throw new Error('ساختار صفحه تغییر کرده است');
     }
 
     const root = parse(html);
     const earthquakes = [];
-    const rows = root.querySelectorAll('tr').slice(1); // حذف ردیف عنوان
+    const rows = root.querySelectorAll('tr').slice(1);
 
     rows.forEach(row => {
       const cols = row.querySelectorAll('td');
@@ -56,7 +56,6 @@ export default async (req, res) => {
       }
     });
 
-    // اگر داده‌ای دریافت نشد
     if (earthquakes.length === 0) {
       throw new Error('هیچ داده زلزله‌ای یافت نشد');
     }
@@ -73,7 +72,7 @@ export default async (req, res) => {
     res.status(500).json({
       success: false,
       error: error.message,
-      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      timestamp: new Date().toISOString()
     });
   }
 };
