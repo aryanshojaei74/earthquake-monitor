@@ -1,522 +1,166 @@
 <!DOCTYPE html>
-<html lang="fa" dir="rtl">
+<html dir="rtl" lang="fa">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>سیستم رصد زمین‌لرزه‌های ایران - داده‌های زنده</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/persian-date@1.2.0/dist/persian-date.min.css">
-    <style>
-        :root {
-            --low-mag: #4CAF50;
-            --medium-mag: #FFC107;
-            --high-mag: #F44336;
-            --primary: #2c3e50;
-            --secondary: #3498db;
-        }
-        
-        * {
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Yekan', 'Segoe UI', Tahoma, sans-serif;
-            background-color: #f5f7fa;
-            margin: 0;
-            padding: 0;
-            color: #333;
-            font-size: 14px;
-        }
-        
-        .container {
-            width: 100%;
-            padding: 10px;
-        }
-        
-        header {
-            background: linear-gradient(135deg, var(--primary), #2980b9);
-            color: white;
-            padding: 1rem 0;
-            text-align: center;
-            position: sticky;
-            top: 0;
-            z-index: 1000;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        
-        h1 {
-            margin: 0;
-            font-size: 1.5rem;
-            padding: 0 10px;
-        }
-        
-        .subtitle {
-            font-size: 0.8rem;
-            opacity: 0.9;
-        }
-        
-        .filters {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            margin: 15px 0;
-            justify-content: center;
-        }
-        
-        .filter-btn {
-            padding: 8px 12px;
-            border: none;
-            border-radius: 5px;
-            background-color: #e0e0e0;
-            cursor: pointer;
-            font-size: 0.8rem;
-            min-width: 80px;
-            transition: all 0.3s;
-        }
-        
-        .filter-btn.active {
-            background-color: var(--secondary);
-            color: white;
-        }
-        
-        .filter-btn.low-mag.active {
-            background-color: var(--low-mag);
-        }
-        
-        .filter-btn.medium-mag.active {
-            background-color: var(--medium-mag);
-        }
-        
-        .filter-btn.high-mag.active {
-            background-color: var(--high-mag);
-        }
-        
-        .stats {
-            display: flex;
-            justify-content: space-between;
-            margin: 15px 0;
-            gap: 10px;
-        }
-        
-        .stat-box {
-            flex: 1;
-            background: white;
-            padding: 15px;
-            border-radius: 8px;
-            text-align: center;
-            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-        }
-        
-        .stat-value {
-            font-size: 1.5rem;
-            font-weight: bold;
-            margin: 5px 0;
-        }
-        
-        .dashboard {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 15px;
-        }
-        
-        .card {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            overflow: hidden;
-        }
-        
-        .card-header {
-            background: linear-gradient(135deg, var(--primary), #2980b9);
-            color: white;
-            padding: 12px 15px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-size: 0.9rem;
-        }
-        
-        .card-body {
-            padding: 15px;
-        }
-        
-        #map {
-            height: 300px;
-            width: 100%;
-            border-radius: 5px;
-        }
-        
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 10px;
-            display: block;
-            overflow-x: auto;
-            white-space: nowrap;
-        }
-        
-        th, td {
-            padding: 8px 10px;
-            text-align: right;
-            border-bottom: 1px solid #eee;
-            font-size: 0.8rem;
-        }
-        
-        th {
-            background-color: #f5f5f5;
-            font-weight: bold;
-        }
-        
-        .magnitude {
-            display: inline-block;
-            width: 25px;
-            height: 25px;
-            line-height: 25px;
-            text-align: center;
-            border-radius: 50%;
-            color: white;
-            font-weight: bold;
-            font-size: 0.7rem;
-        }
-        
-        .magnitude.low {
-            background-color: var(--low-mag);
-        }
-        
-        .magnitude.medium {
-            background-color: var(--medium-mag);
-        }
-        
-        .magnitude.high {
-            background-color: var(--high-mag);
-        }
-        
-        .date-picker {
-            margin: 15px 0;
-            text-align: center;
-        }
-        
-        .persian-date-picker {
-            width: 100%;
-            max-width: 300px;
-            margin: 0 auto;
-        }
-        
-        .mobile-menu {
-            display: none;
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: white;
-            box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
-            z-index: 1000;
-        }
-        
-        .menu-item {
-            flex: 1;
-            text-align: center;
-            padding: 10px 0;
-            font-size: 0.8rem;
-            cursor: pointer;
-        }
-        
-        .menu-item i {
-            display: block;
-            margin-bottom: 5px;
-            font-size: 1.2rem;
-        }
-        
-        .loading {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100px;
-            font-size: 1.2rem;
-            color: #555;
-        }
-        
-        .error-message {
-            color: #d32f2f;
-            background-color: #ffebee;
-            padding: 15px;
-            border-radius: 5px;
-            margin: 15px 0;
-            text-align: center;
-            display: none;
-        }
-        
-        .last-update {
-            text-align: center;
-            font-size: 0.8rem;
-            color: #666;
-            margin: 10px 0;
-        }
-        
-        @media (max-width: 768px) {
-            .mobile-menu {
-                display: flex;
-            }
-            
-            body {
-                padding-bottom: 60px;
-            }
-            
-            .stats {
-                flex-direction: column;
-            }
-        }
-    </style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>سامانه رصد زلزله‌های ایران</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-    <header>
-        <div class="container">
-            <h1><i class="fas fa-earthquake"></i> رصد زلزله‌های ایران</h1>
-            <p class="subtitle">آخرین رویدادهای لرزه‌ای به تفکیک شدت</p>
-        </div>
-    </header>
-    
     <div class="container">
-        <div class="last-update">
-            آخرین بروزرسانی: <span id="update-time">در حال دریافت...</span>
-        </div>
-        
-        <div class="error-message" id="error-message">
-            خطا در دریافت داده‌های زلزله. لطفاً اینترنت خود را بررسی کنید و صفحه را رفرش نمایید.
-        </div>
-        
-        <!-- تقویم شمسی -->
-        <div class="date-picker">
-            <div class="persian-date-picker" id="persianDatePicker"></div>
-        </div>
-        
-        <div class="stats">
-            <div class="stat-box" style="background: linear-gradient(135deg, #4CAF50, #2E7D32); color: white;">
-                <div>زلزله‌های خفیف</div>
-                <div class="stat-value" id="low-count">0</div>
-                <div>(2-4 ریشتر)</div>
-            </div>
-            <div class="stat-box" style="background: linear-gradient(135deg, #FFC107, #FF9800); color: #333;">
-                <div>زلزله‌های متوسط</div>
-                <div class="stat-value" id="medium-count">0</div>
-                <div>(4-5 ریشتر)</div>
-            </div>
-            <div class="stat-box" style="background: linear-gradient(135deg, #F44336, #C62828); color: white;">
-                <div>زلزله‌های شدید</div>
-                <div class="stat-value" id="high-count">0</div>
-                <div>(5+ ریشتر)</div>
-            </div>
-        </div>
-        
-        <div class="filters">
-            <button class="filter-btn all-mag active" data-filter="all">همه</button>
-            <button class="filter-btn low-mag" data-filter="low">خفیف</button>
-            <button class="filter-btn medium-mag" data-filter="medium">متوسط</button>
-            <button class="filter-btn high-mag" data-filter="high">شدید</button>
-        </div>
-        
-        <div class="dashboard">
-            <div class="card">
-                <div class="card-header">
-                    <span>نقشه زلزله‌ها</span>
-                    <i class="fas fa-map"></i>
-                </div>
-                <div class="card-body">
-                    <div id="map"></div>
-                </div>
-            </div>
+        <header>
+            <h1><i class="fas fa-earth-asia"></i> سامانه رصد زلزله‌های ایران</h1>
             
-            <div class="card">
-                <div class="card-header">
-                    <span>جدول اطلاعات</span>
-                    <i class="fas fa-list"></i>
+            <div class="refresh-container">
+                <div class="last-updated">
+                    <span id="update-time">--:--</span>
+                    <small id="update-date"></small>
                 </div>
-                <div class="card-body">
-                    <table id="earthquake-table">
-                        <thead>
-                            <tr>
-                                <th>مکان</th>
-                                <th>زمان</th>
-                                <th>تاریخ</th>
-                                <th>عمق (کیلومتر)</th>
-                                <th>ریشتر</th>
-                            </tr>
-                        </thead>
-                        <tbody id="earthquake-data">
-                            <tr class="loading">
-                                <td colspan="5">در حال دریافت داده‌ها...</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <button id="refresh-btn" onclick="fetchEarthquakes()">
+                    <span id="refresh-text"><i class="fas fa-sync-alt"></i> بروزرسانی</span>
+                    <span id="refresh-spinner" style="display:none;">
+                        <i class="fas fa-spinner fa-spin"></i> در حال بروزرسانی...
+                    </span>
+                </button>
+            </div>
+        </header>
+
+        <div class="earthquake-info">
+            <div class="stats">
+                <div class="stat-box">
+                    <span class="stat-title">تعداد زلزله‌ها:</span>
+                    <span class="stat-value" id="quake-count">0</span>
+                </div>
+                <div class="stat-box">
+                    <span class="stat-title">قوی‌ترین زلزله:</span>
+                    <span class="stat-value" id="strongest-quake">0</span>
                 </div>
             </div>
         </div>
-    </div>
-    
-    <div class="mobile-menu">
-        <div class="menu-item" id="mobile-map">
-            <i class="fas fa-map"></i>
-            <div>نقشه</div>
-        </div>
-        <div class="menu-item" id="mobile-list">
-            <i class="fas fa-list"></i>
-            <div>لیست</div>
-        </div>
-        <div class="menu-item" id="mobile-stats">
-            <i class="fas fa-chart-pie"></i>
-            <div>آمار</div>
-        </div>
-        <div class="menu-item" id="mobile-refresh">
-            <i class="fas fa-sync-alt"></i>
-            <div>بروزرسانی</div>
-        </div>
-    </div>
-    
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/persian-date@1.2.0/dist/persian-date.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/persian-datepicker@1.2.0/dist/js/persian-datepicker.min.js"></script>
-    <script>
-        // تبدیل تاریخ به شمسی
-        function toPersianDate(gregorianDate) {
-            const date = new PersianDate(new Date(gregorianDate));
-            return date.format('YYYY/MM/DD HH:mm');
-        }
-        
-        // تابع دریافت داده از سایت دانشگاه تهران
-        async function fetchEarthquakeData() {
-            try {
-                document.getElementById('error-message').style.display = 'none';
-                document.getElementById('earthquake-data').innerHTML = `
-                    <tr class="loading">
-                        <td colspan="5">در حال دریافت داده‌های جدید...</td>
+
+        <div class="table-container">
+            <table id="earthquake-table">
+                <thead>
+                    <tr>
+                        <th>تاریخ</th>
+                        <th>زمان</th>
+                        <th>مختصات</th>
+                        <th>عمق (km)</th>
+                        <th>بزرگی</th>
+                        <th>محل وقوع</th>
                     </tr>
+                </thead>
+                <tbody id="table-body">
+                    <!-- داده‌ها اینجا نمایش داده می‌شوند -->
+                </tbody>
+            </table>
+        </div>
+
+        <footer>
+            <p>منبع داده‌ها: <a href="http://irsc.ut.ac.ir" target="_blank">مرکز لرزه‌نگاری ایران</a></p>
+            <p class="version">نسخه 1.1.0</p>
+        </footer>
+    </div>
+
+    <script>
+        // تابع تبدیل تاریخ به فرمت فارسی
+        function toPersianDigits(number) {
+            const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+            return number.toString().replace(/\d/g, d => persianDigits[d]);
+        }
+
+        // تابع نمایش زلزله‌ها
+        function displayEarthquakes(earthquakes) {
+            const tableBody = document.getElementById('table-body');
+            tableBody.innerHTML = '';
+            
+            if (!earthquakes || earthquakes.length === 0) {
+                const row = document.createElement('tr');
+                row.innerHTML = '<td colspan="6" class="no-data">داده‌ای یافت نشد</td>';
+                tableBody.appendChild(row);
+                return;
+            }
+            
+            // آپدیت آمار
+            document.getElementById('quake-count').textContent = toPersianDigits(earthquakes.length);
+            
+            const strongest = Math.max(...earthquakes.map(q => q.magnitude));
+            document.getElementById('strongest-quake').textContent = toPersianDigits(strongest.toFixed(1));
+            
+            // نمایش هر زلزله در جدول
+            earthquakes.forEach(quake => {
+                const row = document.createElement('tr');
+                
+                // رنگ‌بندی بر اساس بزرگی
+                let magnitudeClass = '';
+                if (quake.magnitude >= 5) magnitudeClass = 'high-magnitude';
+                else if (quake.magnitude >= 4) magnitudeClass = 'medium-magnitude';
+                
+                row.innerHTML = `
+                    <td>${quake.date}</td>
+                    <td>${quake.time}</td>
+                    <td>${toPersianDigits(quake.latitude.toFixed(2))}, ${toPersianDigits(quake.longitude.toFixed(2))}</td>
+                    <td>${toPersianDigits(quake.depth.toFixed(1))}</td>
+                    <td class="${magnitudeClass}">${toPersianDigits(quake.magnitude.toFixed(1))}</td>
+                    <td>${quake.location}</td>
                 `;
                 
-                // استفاده از CORS Anywhere برای دور زدن محدودیت CORS
-                const proxyUrl = 'https://cors-anywhere.herokuapp.com/';
-                const targetUrl = 'http://irsc.ut.ac.ir/index.php?lang=fa';
-                
-                const response = await fetch(proxyUrl + targetUrl);
+                tableBody.appendChild(row);
+            });
+        }
+
+        // تابع دریافت داده‌های زلزله
+        async function fetchEarthquakes() {
+            const btn = document.getElementById('refresh-btn');
+            const spinner = document.getElementById('refresh-spinner');
+            const text = document.getElementById('refresh-text');
+            
+            btn.disabled = true;
+            text.style.display = 'none';
+            spinner.style.display = 'inline';
+            
+            try {
+                const timestamp = new Date().getTime();
+                const response = await fetch(`/api/data?_=${timestamp}`);
                 
                 if (!response.ok) {
-                    throw new Error('Network response was not ok');
+                    throw new Error('خطا در دریافت داده‌ها');
                 }
                 
-                const html = await response.text();
-                const parser = new DOMParser();
-                const doc = parser.parseFromString(html, 'text/html');
-                const table = doc.querySelector('table.table');
+                const data = await response.json();
                 
-                const earthquakes = [];
-                const rows = table.querySelectorAll('tr');
-                
-                for (let i = 1; i < rows.length; i++) {
-                    const cols = rows[i].querySelectorAll('td');
-                    if (cols.length >= 6) {
-                        // تبدیل تاریخ میلادی به شمسی
-                        const gregorianDate = cols[0].textContent.trim();
-                        const dateParts = gregorianDate.split(' ')[0].split('-');
-                        const timePart = gregorianDate.split(' ')[1];
-                        
-                        const jalaliDate = new PersianDate(new Date(
-                            parseInt(dateParts[0]),
-                            parseInt(dateParts[1]) - 1,
-                            parseInt(dateParts[2])
-                        )).format('YYYY/MM/DD');
-                        
-                        earthquakes.push({
-                            date: jalaliDate,
-                            time: timePart,
-                            latitude: parseFloat(cols[2].textContent.trim()),
-                            longitude: parseFloat(cols[3].textContent.trim()),
-                            depth: parseFloat(cols[4].textContent.trim()),
-                            magnitude: parseFloat(cols[5].textContent.trim()),
-                            location: cols[6]?.textContent.trim() || 'نامشخص'
-                        });
-                    }
+                if (!data.success) {
+                    throw new Error(data.error || 'خطای ناشناخته');
                 }
                 
                 // نمایش زمان بروزرسانی
-                const now = new PersianDate().format('YYYY/MM/DD HH:mm:ss');
-                document.getElementById('update-time').textContent = now;
+                const now = new Date();
+                document.getElementById('update-time').textContent = now.toLocaleTimeString('fa-IR');
+                document.getElementById('update-date').textContent = now.toLocaleDateString('fa-IR');
                 
-                // پردازش و نمایش داده‌ها
-                updateCounters(earthquakes);
-                renderTable(earthquakes);
-                updateMap(earthquakes);
-                
-                return earthquakes;
+                // نمایش داده‌ها
+                displayEarthquakes(data.data);
                 
             } catch (error) {
-                console.error('Error fetching earthquake data:', error);
-                document.getElementById('error-message').style.display = 'block';
-                document.getElementById('earthquake-data').innerHTML = `
-                    <tr class="loading">
-                        <td colspan="5">خطا در دریافت داده‌ها</td>
-                    </tr>
-                `;
-                return [];
+                console.error('Error:', error);
+                alert('خطا در بروزرسانی داده‌ها: ' + error.message);
+            } finally {
+                btn.disabled = false;
+                spinner.style.display = 'none';
+                text.style.display = 'inline';
             }
         }
-        
-        // به‌روزرسانی شمارشگرها
-        function updateCounters(earthquakes) {
-            let lowCount = 0, mediumCount = 0, highCount = 0;
+
+        // بارگذاری اولیه داده‌ها
+        document.addEventListener('DOMContentLoaded', () => {
+            fetchEarthquakes();
             
-            earthquakes.forEach(eq => {
-                if (eq.magnitude >= 2 && eq.magnitude < 4) lowCount++;
-                else if (eq.magnitude >= 4 && eq.magnitude < 5) mediumCount++;
-                else if (eq.magnitude >= 5) highCount++;
-            });
-            
-            document.getElementById('low-count').textContent = lowCount;
-            document.getElementById('medium-count').textContent = mediumCount;
-            document.getElementById('high-count').textContent = highCount;
-        }
-        
-        // ایجاد نقشه
-        const map = L.map('map', {
-            zoomControl: false,
-            touchZoom: true,
-            scrollWheelZoom: false,
-            doubleClickZoom: true,
-            boxZoom: false,
-            dragging: true
-        }).setView([32.4279, 53.6880], 5);
-        
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        }).addTo(map);
-        
-        // اضافه کردن مارکرها
-        function updateMap(data) {
-            map.eachLayer(layer => {
-                if (layer instanceof L.CircleMarker) {
-                    map.removeLayer(layer);
-                }
-            });
-            
-            data.forEach(eq => {
-                const marker = L.circleMarker([eq.latitude, eq.longitude], {
-                    radius: Math.min(eq.magnitude * 3, 20),
-                    fillColor: getColor(eq.magnitude),
-                    color: '#fff',
-                    weight: 1,
-                    opacity: 1,
-                    fillOpacity: 0.8
-                }).addTo(map);
-                
-                marker.bindPopup(`
-                    <b>${eq.location}</b><br>
-                    <small>${eq.date} ${eq.time}</small><br>
-                    <b>بزرگی:</b> ${eq.magnitude} ریشتر<br>
-                    <b>عمق:</b> ${eq.depth} کیلومتر
-                `);
-            });
-        }
-        
-        function getColor(magnitude) {
-            if (magnitude < 4) return '#4CAF50';
-            if (magnitude < 5) return '#FFC107';
-            return
+            // نمایش زمان فعلی
+            const now = new Date();
+            document.getElementById('update-time').textContent = now.toLocaleTimeString('fa-IR');
+            document.getElementById('update-date').textContent = now.toLocaleDateString('fa-IR');
+        });
+    </script>
+</body>
+</html>
