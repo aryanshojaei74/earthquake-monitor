@@ -3,164 +3,124 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>سامانه رصد زلزله‌های ایران</title>
-    <link rel="stylesheet" href="styles.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <title>نظارت بر زمین‌لرزه</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; line-height: 1.6; }
+        .earthquake { margin-bottom: 15px; padding: 10px; border: 1px solid #ddd; border-radius: 5px; }
+        .magnitude { font-weight: bold; color: #d9534f; }
+        .loading { text-align: center; padding: 20px; }
+        .alert { padding: 15px; margin-bottom: 20px; border-radius: 4px; }
+        .alert-danger { background-color: #f8d7da; color: #721c24; }
+        .alert-info { background-color: #d1ecf1; color: #0c5460; }
+        .btn { padding: 5px 10px; border-radius: 3px; cursor: pointer; }
+        .btn-warning { background-color: #ffc107; border-color: #ffc107; }
+    </style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1><i class="fas fa-earth-asia"></i> سامانه رصد زلزله‌های ایران</h1>
-            
-            <div class="refresh-container">
-                <div class="last-updated">
-                    <span id="update-time">--:--</span>
-                    <small id="update-date"></small>
-                </div>
-                <button id="refresh-btn" onclick="fetchEarthquakes()">
-                    <span id="refresh-text"><i class="fas fa-sync-alt"></i> بروزرسانی</span>
-                    <span id="refresh-spinner" style="display:none;">
-                        <i class="fas fa-spinner fa-spin"></i> در حال بروزرسانی...
-                    </span>
-                </button>
-            </div>
-        </header>
-
-        <div class="earthquake-info">
-            <div class="stats">
-                <div class="stat-box">
-                    <span class="stat-title">تعداد زلزله‌ها:</span>
-                    <span class="stat-value" id="quake-count">0</span>
-                </div>
-                <div class="stat-box">
-                    <span class="stat-title">قوی‌ترین زلزله:</span>
-                    <span class="stat-value" id="strongest-quake">0</span>
-                </div>
-            </div>
-        </div>
-
-        <div class="table-container">
-            <table id="earthquake-table">
-                <thead>
-                    <tr>
-                        <th>تاریخ</th>
-                        <th>زمان</th>
-                        <th>مختصات</th>
-                        <th>عمق (km)</th>
-                        <th>بزرگی</th>
-                        <th>محل وقوع</th>
-                    </tr>
-                </thead>
-                <tbody id="table-body">
-                    <!-- داده‌ها اینجا نمایش داده می‌شوند -->
-                </tbody>
-            </table>
-        </div>
-
-        <footer>
-            <p>منبع داده‌ها: <a href="http://irsc.ut.ac.ir" target="_blank">مرکز لرزه‌نگاری ایران</a></p>
-            <p class="version">نسخه 1.1.0</p>
-        </footer>
+    <h1>آخرین زمین‌لرزه‌های ایران</h1>
+    <div id="loading-indicator" class="loading" style="display: none;">
+        در حال دریافت داده‌ها...
     </div>
+    <div id="error-message"></div>
+    <div id="earthquakes-container"></div>
 
     <script>
-        // تابع تبدیل تاریخ به فرمت فارسی
-        function toPersianDigits(number) {
-            const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
-            return number.toString().replace(/\d/g, d => persianDigits[d]);
-        }
+        // تابع اصلی دریافت داده
+        async function fetchEarthquakes() {
+            const errorElement = document.getElementById('error-message');
+            const loadingElement = document.getElementById('loading-indicator');
+            const container = document.getElementById('earthquakes-container');
+            
+            try {
+                // نمایش وضعیت بارگذاری
+                loadingElement.style.display = 'block';
+                errorElement.innerHTML = '';
+                container.innerHTML = '';
+                
+                // درخواست به API با پارامترهای ضد کش
+                const apiUrl = `/api/data?_=${Date.now()}`;
+                console.log('در حال ارسال درخواست به:', apiUrl);
+                
+                const response = await fetch(apiUrl, {
+                    headers: {
+                        'Accept': 'application/json',
+                        'Cache-Control': 'no-cache'
+                    }
+                });
 
-        // تابع نمایش زلزله‌ها
-        function displayEarthquakes(earthquakes) {
-            const tableBody = document.getElementById('table-body');
-            tableBody.innerHTML = '';
-            
-            if (!earthquakes || earthquakes.length === 0) {
-                const row = document.createElement('tr');
-                row.innerHTML = '<td colspan="6" class="no-data">داده‌ای یافت نشد</td>';
-                tableBody.appendChild(row);
-                return;
-            }
-            
-            // آپدیت آمار
-            document.getElementById('quake-count').textContent = toPersianDigits(earthquakes.length);
-            
-            const strongest = Math.max(...earthquakes.map(q => q.magnitude));
-            document.getElementById('strongest-quake').textContent = toPersianDigits(strongest.toFixed(1));
-            
-            // نمایش هر زلزله در جدول
-            earthquakes.forEach(quake => {
-                const row = document.createElement('tr');
+                console.log('وضعیت پاسخ:', response.status);
                 
-                // رنگ‌بندی بر اساس بزرگی
-                let magnitudeClass = '';
-                if (quake.magnitude >= 5) magnitudeClass = 'high-magnitude';
-                else if (quake.magnitude >= 4) magnitudeClass = 'medium-magnitude';
+                if (!response.ok) {
+                    throw new Error(`خطای شبکه: ${response.status} ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                console.log('داده‌های دریافتی:', result);
                 
-                row.innerHTML = `
-                    <td>${quake.date}</td>
-                    <td>${quake.time}</td>
-                    <td>${toPersianDigits(quake.latitude.toFixed(2))}, ${toPersianDigits(quake.longitude.toFixed(2))}</td>
-                    <td>${toPersianDigits(quake.depth.toFixed(1))}</td>
-                    <td class="${magnitudeClass}">${toPersianDigits(quake.magnitude.toFixed(1))}</td>
-                    <td>${quake.location}</td>
+                if (!result.success) {
+                    throw new Error(result.error || 'پاسخ نامعتبر از سرور');
+                }
+
+                if (!result.data || result.data.length === 0) {
+                    throw new Error('داده‌ای برای نمایش وجود ندارد');
+                }
+
+                displayEarthquakes(result.data);
+                
+            } catch (error) {
+                console.error('جزئیات خطا:', error);
+                errorElement.innerHTML = `
+                    <div class="alert alert-danger">
+                        <strong>خطا در دریافت داده‌ها:</strong> ${error.message}<br>
+                        <small>آخرین بررسی: ${new Date().toLocaleString('fa-IR')}</small>
+                        <button onclick="window.location.reload()" class="btn btn-warning">
+                            تلاش مجدد
+                        </button>
+                    </div>
                 `;
                 
-                tableBody.appendChild(row);
+                // نمایش آخرین داده‌های ذخیره شده
+                const cachedData = localStorage.getItem('lastEarthquakeData');
+                if (cachedData) {
+                    displayEarthquakes(JSON.parse(cachedData));
+                    errorElement.innerHTML += `
+                        <div class="alert alert-info">
+                            توجه: داده‌های کش شده نمایش داده می‌شوند
+                        </div>
+                    `;
+                }
+            } finally {
+                loadingElement.style.display = 'none';
+            }
+        }
+
+        // تابع نمایش داده‌ها
+        function displayEarthquakes(earthquakes) {
+            const container = document.getElementById('earthquakes-container');
+            container.innerHTML = '';
+            
+            // ذخیره داده‌ها برای استفاده بعدی
+            localStorage.setItem('lastEarthquakeData', JSON.stringify(earthquakes));
+            
+            earthquakes.forEach(eq => {
+                const eqElement = document.createElement('div');
+                eqElement.className = 'earthquake';
+                eqElement.innerHTML = `
+                    <h3>${eq.location || 'نامشخص'} <span class="magnitude">(${eq.magnitude} ریشتر)</span></h3>
+                    <p>تاریخ: ${eq.date} - ساعت: ${eq.time}</p>
+                    <p>مختصات: عرض ${eq.latitude}، طول ${eq.longitude}</p>
+                    <p>عمق: ${eq.depth} کیلومتر</p>
+                    <small>منبع: ${eq.source === 'IRSC' ? 'پژوهشگاه بین‌المللی زلزله' : 'سازمان زمین‌شناسی آمریکا'}</small>
+                `;
+                container.appendChild(eqElement);
             });
         }
 
-        // تابع دریافت داده‌های زلزله
-        async function fetchEarthquakes() {
-            const btn = document.getElementById('refresh-btn');
-            const spinner = document.getElementById('refresh-spinner');
-            const text = document.getElementById('refresh-text');
-            
-            btn.disabled = true;
-            text.style.display = 'none';
-            spinner.style.display = 'inline';
-            
-            try {
-                const timestamp = new Date().getTime();
-                const response = await fetch(`/api/data?_=${timestamp}`);
-                
-                if (!response.ok) {
-                    throw new Error('خطا در دریافت داده‌ها');
-                }
-                
-                const data = await response.json();
-                
-                if (!data.success) {
-                    throw new Error(data.error || 'خطای ناشناخته');
-                }
-                
-                // نمایش زمان بروزرسانی
-                const now = new Date();
-                document.getElementById('update-time').textContent = now.toLocaleTimeString('fa-IR');
-                document.getElementById('update-date').textContent = now.toLocaleDateString('fa-IR');
-                
-                // نمایش داده‌ها
-                displayEarthquakes(data.data);
-                
-            } catch (error) {
-                console.error('Error:', error);
-                alert('خطا در بروزرسانی داده‌ها: ' + error.message);
-            } finally {
-                btn.disabled = false;
-                spinner.style.display = 'none';
-                text.style.display = 'inline';
-            }
-        }
-
         // بارگذاری اولیه داده‌ها
-        document.addEventListener('DOMContentLoaded', () => {
-            fetchEarthquakes();
-            
-            // نمایش زمان فعلی
-            const now = new Date();
-            document.getElementById('update-time').textContent = now.toLocaleTimeString('fa-IR');
-            document.getElementById('update-date').textContent = now.toLocaleDateString('fa-IR');
-        });
+        document.addEventListener('DOMContentLoaded', fetchEarthquakes);
+        
+        // به‌روزرسانی خودکار هر 5 دقیقه
+        setInterval(fetchEarthquakes, 5 * 60 * 1000);
     </script>
 </body>
 </html>
