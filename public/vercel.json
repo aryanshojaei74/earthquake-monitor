@@ -1,20 +1,20 @@
 {
   "version": 2,
   "builds": [
-    { "src": "api/data.js", "use": "@vercel/node" },
-    { "src": "public/**", "use": "@vercel/static" }
+    {
+      "src": "api/data.js",
+      "use": "@vercel/node"
+    }
   ],
   "routes": [
     {
       "src": "/api/data",
       "dest": "/api/data.js",
-      "headers": {
-        "Cache-Control": "no-store"
-      }
+      "methods": ["GET"]
     },
-    { "src": "/(.*)", "dest": "/public/$1" }
-  ],
-  "env": {
-    "NODE_ENV": "production"
-  }
+    {
+      "src": "/(.*)",
+      "dest": "/public/index.html"
+    }
+  ]
 }
